@@ -2,11 +2,14 @@ package main;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Properties;
 
 import org.apache.poi.ss.usermodel.Cell;
@@ -17,6 +20,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class PivotProcessor {
 	private static String inputFilePath = "";
 	private static String inputSheetName = "";
+	private static String dateTimeFormat = "";
 	private static ArrayList<InputStructure> inputStructureData = new ArrayList<InputStructure>();
 
 	public static void main(String s[]) {
@@ -30,10 +34,20 @@ public class PivotProcessor {
 		}
 	}
 	
-	public static void enhanceData() {
+	public static void enhanceData() throws Exception {
 		for (InputStructure inputStructure: inputStructureData) {
+			// split stocks
 			inputStructure.distinctStockArray = new HashSet<String>();
 			inputStructure.distinctStockArray.addAll(Arrays.asList(inputStructure.stocks.split(" ")));
+			// parse date time
+			inputStructure.triggerAtCalendarObj = Calendar.getInstance();
+			SimpleDateFormat sdf = new SimpleDateFormat(dateTimeFormat, Locale.ENGLISH);
+			inputStructure.triggerAtCalendarObj.setTime(sdf.parse(inputStructure.triggeredAt));
+			inputStructure.triggerAtDateObj = inputStructure.triggerAtCalendarObj.getTime();
+			SimpleDateFormat datePortionFormat = new SimpleDateFormat("dd-MM-yyyy");
+			inputStructure.datePortion = datePortionFormat.format(inputStructure.triggerAtDateObj);
+			SimpleDateFormat timePortionFormat = new SimpleDateFormat("HH:mm");
+			inputStructure.timePortion = timePortionFormat.format(inputStructure.triggerAtDateObj);
 		}
 	}
 
@@ -86,22 +100,26 @@ public class PivotProcessor {
 		prop.load(ip);
 		inputFilePath = prop.getProperty("INPUT_FILE");
 		inputSheetName = prop.getProperty("INPUT_SHEET");
+		dateTimeFormat = prop.getProperty("DATE_TIME_FORMAT");
 	}
 }
 
 class InputStructure {
 	public String alertName;
 	public String triggeredAt;
-	public Calendar triggerAtTimeStamp;
+	public Calendar triggerAtCalendarObj;
+	public Date triggerAtDateObj;
+	public String datePortion;
+	public String timePortion;
 	public int count;
 	public String stocks;
 	public String[] stockArray;
 	public HashSet<String> distinctStockArray;
-	
 	@Override
 	public String toString() {
-		return "InputStructure [alertName=" + alertName + ", triggeredAt=" + triggeredAt + ", triggerAtTimeStamp="
-				+ triggerAtTimeStamp + ", count=" + count + ", stocks=" + stocks + ", stockArray="
+		return "InputStructure [alertName=" + alertName + ", triggeredAt=" + triggeredAt + ", triggerAtCalendarObj="
+				+ triggerAtCalendarObj + ", triggerAtDateObj=" + triggerAtDateObj + ", datePortion=" + datePortion
+				+ ", timePortion=" + timePortion + ", count=" + count + ", stocks=" + stocks + ", stockArray="
 				+ Arrays.toString(stockArray) + ", distinctStockArray=" + distinctStockArray + "]";
 	}
 }
