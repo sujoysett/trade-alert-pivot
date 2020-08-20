@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
@@ -22,15 +23,38 @@ public class PivotProcessor {
 	private static String inputSheetName = "";
 	private static String dateTimeFormat = "";
 	private static ArrayList<InputStructure> inputStructureData = new ArrayList<InputStructure>();
+	private static OutputStructure1 outputStructureData = new OutputStructure1();
 
 	public static void main(String s[]) {
 		try {
 			readProperties();
 			readFile();
 			enhanceData();
+			pivotData();
 			System.out.println(inputStructureData.get(0));
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+	}
+	
+	public static void pivotData() throws Exception {
+		for (InputStructure inputStructure: inputStructureData) {
+			if (! outputStructureData.mapDateStructure2.containsKey(inputStructure.datePortion)) {
+				outputStructureData.mapDateStructure2.put(inputStructure.datePortion, new OutputStructure2());
+			}
+			OutputStructure2 ref2 = outputStructureData.mapDateStructure2.get(inputStructure.datePortion);
+			for (String stock: inputStructure.distinctStockArray) {
+				if (! ref2.mapStockStructure3.containsKey(stock)) {
+					ref2.mapStockStructure3.put(stock, new OutputStructure3());
+				}
+				OutputStructure3 ref3 = ref2.mapStockStructure3.get(stock);
+				if (ref3.mapAlertTime.containsKey(inputStructure.alertName)) {
+					
+				}
+				else {
+					
+				}
+			}
 		}
 	}
 	
@@ -121,5 +145,24 @@ class InputStructure {
 				+ triggerAtCalendarObj + ", triggerAtDateObj=" + triggerAtDateObj + ", datePortion=" + datePortion
 				+ ", timePortion=" + timePortion + ", count=" + count + ", stocks=" + stocks + ", stockArray="
 				+ Arrays.toString(stockArray) + ", distinctStockArray=" + distinctStockArray + "]";
+	}
+}
+
+class OutputStructure1 {
+	public HashMap<String, OutputStructure2> mapDateStructure2;
+	public OutputStructure1() {
+		this.mapDateStructure2 = new HashMap<String, OutputStructure2>();
+	}
+}
+class OutputStructure2 {
+	public HashMap<String, OutputStructure3> mapStockStructure3;
+	public OutputStructure2() {
+		this.mapStockStructure3 = new HashMap<String, OutputStructure3>();
+	}
+}
+class OutputStructure3 {
+	public HashMap<String, String> mapAlertTime;
+	public OutputStructure3() {
+		this.mapAlertTime = new HashMap<String, String>();
 	}
 }
