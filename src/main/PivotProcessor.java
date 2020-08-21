@@ -2,6 +2,7 @@ package main;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,6 +13,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Properties;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -22,8 +25,11 @@ public class PivotProcessor {
 	private static String inputFilePath = "";
 	private static String inputSheetName = "";
 	private static String dateTimeFormat = "";
+	private static String outputFilePath = "";
+	private static String outputSheetName = "";
 	private static ArrayList<InputStructure> inputStructureData = new ArrayList<InputStructure>();
 	private static OutputStructure1 outputStructureData = new OutputStructure1();
+	private static TreeSet<String> universalAlertList = new TreeSet<String>();
 
 	public static void main(String s[]) {
 		try {
@@ -31,10 +37,47 @@ public class PivotProcessor {
 			readFile();
 			enhanceData();
 			pivotData();
-			System.out.println(inputStructureData.get(0));
+			writeFile();
+			System.out.println(outputStructureData);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void writeFile() throws Exception {
+
+		XSSFWorkbook workbook = new XSSFWorkbook();
+		XSSFSheet sheet = workbook.createSheet(outputSheetName);
+		
+		Cell cell = null;
+		int colCount = 0;
+		int rowCount = 0;
+		
+		// header row
+		Row headerRow = sheet.createRow(0);
+		cell = headerRow.createCell(0);
+		cell.setCellValue("Date");
+		cell = headerRow.createCell(1);
+		cell.setCellValue("Stock Name");
+		colCount = 2;
+		for (String alertName: universalAlertList) {
+		  cell = headerRow.createCell(colCount);
+		  cell.setCellValue(alertName);
+		  colCount++;
+		}
+		
+		// body rows
+		
+		
+		// Resize all columns to fit the content size
+		for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
+		  sheet.autoSizeColumn(i);
+		}
+		
+		// write
+		FileOutputStream fileOut = new FileOutputStream(outputFilePath);
+		workbook.write(fileOut);
+		fileOut.close();
 	}
 	
 	public static void pivotData() throws Exception {
@@ -46,13 +89,28 @@ public class PivotProcessor {
 			for (String stock: inputStructure.distinctStockArray) {
 				if (! ref2.mapStockStructure3.containsKey(stock)) {
 					ref2.mapStockStructure3.put(stock, new OutputStructure3());
+					OutputStructure3 ref3 = ref2.mapStockStructure3.get(stock);
+					for (String universalAlert: universalAlertList) {
+						ref3.mapAlertTime.put(universalAlert,null);
+					}
 				}
 				OutputStructure3 ref3 = ref2.mapStockStructure3.get(stock);
 				if (ref3.mapAlertTime.containsKey(inputStructure.alertName)) {
-					
+					if(ref3.mapAlertTime.get(inputStructure.alertName)==null) {
+						ref3.mapAlertTime.put(inputStructure.alertName, inputStructure.timePortion);
+					}
+					else {
+						String prevEntry = ref3.mapAlertTime.get(inputStructure.alertName);
+						String thisEntry = inputStructure.timePortion;
+						SimpleDateFormat sdf = new SimpleDateFormat("K:mm");
+						if (sdf.parse(thisEntry).before(sdf.parse(prevEntry))) {
+							// System.out.println(thisEntry + " is before "+ prevEntry);
+							ref3.mapAlertTime.put(inputStructure.alertName, thisEntry);
+						}
+					}
 				}
 				else {
-					
+					ref3.mapAlertTime.put(inputStructure.alertName, inputStructure.timePortion);
 				}
 			}
 		}
@@ -72,6 +130,8 @@ public class PivotProcessor {
 			inputStructure.datePortion = datePortionFormat.format(inputStructure.triggerAtDateObj);
 			SimpleDateFormat timePortionFormat = new SimpleDateFormat("HH:mm");
 			inputStructure.timePortion = timePortionFormat.format(inputStructure.triggerAtDateObj);
+			// universal alert list
+			universalAlertList.add(inputStructure.alertName);
 		}
 	}
 
@@ -125,6 +185,8 @@ public class PivotProcessor {
 		inputFilePath = prop.getProperty("INPUT_FILE");
 		inputSheetName = prop.getProperty("INPUT_SHEET");
 		dateTimeFormat = prop.getProperty("DATE_TIME_FORMAT");
+		outputFilePath = prop.getProperty("OUTPUT_FILE");
+		outputSheetName = prop.getProperty("OUTPUT_SHEET");
 	}
 }
 
@@ -153,16 +215,28 @@ class OutputStructure1 {
 	public OutputStructure1() {
 		this.mapDateStructure2 = new HashMap<String, OutputStructure2>();
 	}
+	@Override
+	public String toString() {
+		return "OutputStructure1 [mapDateStructure2=" + mapDateStructure2 + "]";
+	}
 }
 class OutputStructure2 {
-	public HashMap<String, OutputStructure3> mapStockStructure3;
+	public TreeMap<String, OutputStructure3> mapStockStructure3;
 	public OutputStructure2() {
-		this.mapStockStructure3 = new HashMap<String, OutputStructure3>();
+		this.mapStockStructure3 = new TreeMap<String, OutputStructure3>();
+	}
+	@Override
+	public String toString() {
+		return "OutputStructure2 [mapStockStructure3=" + mapStockStructure3 + "]";
 	}
 }
 class OutputStructure3 {
-	public HashMap<String, String> mapAlertTime;
+	public TreeMap<String, String> mapAlertTime;
 	public OutputStructure3() {
-		this.mapAlertTime = new HashMap<String, String>();
+		this.mapAlertTime = new TreeMap<String, String>();
+	}
+	@Override
+	public String toString() {
+		return "OutputStructure3 [mapAlertTime=" + mapAlertTime + "]";
 	}
 }
