@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.Properties;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -146,14 +145,17 @@ public class PivotProcessor {
 			inputStructure.distinctStockArray = new HashSet<String>();
 			inputStructure.distinctStockArray.addAll(Arrays.asList(inputStructure.stocks.split(" ")));
 			// parse date time
+			System.out.println(inputStructure.triggeredAt);
 			inputStructure.triggerAtCalendarObj = Calendar.getInstance();
-			SimpleDateFormat sdf = new SimpleDateFormat(dateTimeFormat, Locale.ENGLISH);
+			SimpleDateFormat sdf = new SimpleDateFormat(dateTimeFormat);
 			inputStructure.triggerAtCalendarObj.setTime(sdf.parse(inputStructure.triggeredAt));
 			inputStructure.triggerAtDateObj = inputStructure.triggerAtCalendarObj.getTime();
 			SimpleDateFormat datePortionFormat = new SimpleDateFormat("dd-MM-yyyy");
 			inputStructure.datePortion = datePortionFormat.format(inputStructure.triggerAtDateObj);
 			SimpleDateFormat timePortionFormat = new SimpleDateFormat("HH:mm");
 			inputStructure.timePortion = timePortionFormat.format(inputStructure.triggerAtDateObj);
+			System.out.println(inputStructure.datePortion);
+			System.out.println(inputStructure.timePortion);
 			// universal alert list
 			universalAlertList.add(inputStructure.alertName);
 		}
