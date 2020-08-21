@@ -34,25 +34,33 @@ public class PivotProcessor {
 	public static void main(String s[]) {
 		try {
 			readProperties();
+			System.out.println("Reading Properties");
+			
 			readFile();
+			System.out.println("Reading File");
+			
 			enhanceData();
+			System.out.println("Enhancing Data");
+			
 			pivotData();
+			System.out.println("Pivoting Data");
+			
 			writeFile();
-			System.out.println(outputStructureData);
+			System.out.println("Writing File");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public static void writeFile() throws Exception {
 
 		XSSFWorkbook workbook = new XSSFWorkbook();
 		XSSFSheet sheet = workbook.createSheet(outputSheetName);
-		
+
 		Cell cell = null;
 		int colCount = 0;
 		int rowCount = 0;
-		
+
 		// header row
 		Row headerRow = sheet.createRow(0);
 		cell = headerRow.createCell(0);
@@ -60,46 +68,63 @@ public class PivotProcessor {
 		cell = headerRow.createCell(1);
 		cell.setCellValue("Stock Name");
 		colCount = 2;
-		for (String alertName: universalAlertList) {
-		  cell = headerRow.createCell(colCount);
-		  cell.setCellValue(alertName);
-		  colCount++;
+		for (String alertName : universalAlertList) {
+			cell = headerRow.createCell(colCount);
+			cell.setCellValue(alertName);
+			colCount++;
 		}
-		
+
 		// body rows
-		
-		
+		rowCount = 1;
+		for (String dateOP : outputStructureData.mapDateStructure2.keySet()) {
+			for (String stockOP : outputStructureData.mapDateStructure2.get(dateOP).mapStockStructure3.keySet()) {
+				Row bodyRow = sheet.createRow(rowCount);
+				cell = bodyRow.createCell(0);
+				cell.setCellValue(dateOP);
+				cell = bodyRow.createCell(1);
+				cell.setCellValue(stockOP);
+				colCount = 2;
+				for (String alertName : universalAlertList) {
+					String timeOP = outputStructureData.mapDateStructure2.get(dateOP).mapStockStructure3
+							.get(stockOP).mapAlertTime.get(alertName);
+					cell = bodyRow.createCell(colCount);
+					cell.setCellValue(timeOP == null ? "" : timeOP);
+					colCount++;
+				}
+				rowCount++;
+			}
+		}
+
 		// Resize all columns to fit the content size
 		for (int i = 0; i < headerRow.getPhysicalNumberOfCells(); i++) {
-		  sheet.autoSizeColumn(i);
+			sheet.autoSizeColumn(i);
 		}
-		
+
 		// write
 		FileOutputStream fileOut = new FileOutputStream(outputFilePath);
 		workbook.write(fileOut);
 		fileOut.close();
 	}
-	
+
 	public static void pivotData() throws Exception {
-		for (InputStructure inputStructure: inputStructureData) {
-			if (! outputStructureData.mapDateStructure2.containsKey(inputStructure.datePortion)) {
+		for (InputStructure inputStructure : inputStructureData) {
+			if (!outputStructureData.mapDateStructure2.containsKey(inputStructure.datePortion)) {
 				outputStructureData.mapDateStructure2.put(inputStructure.datePortion, new OutputStructure2());
 			}
 			OutputStructure2 ref2 = outputStructureData.mapDateStructure2.get(inputStructure.datePortion);
-			for (String stock: inputStructure.distinctStockArray) {
-				if (! ref2.mapStockStructure3.containsKey(stock)) {
+			for (String stock : inputStructure.distinctStockArray) {
+				if (!ref2.mapStockStructure3.containsKey(stock)) {
 					ref2.mapStockStructure3.put(stock, new OutputStructure3());
 					OutputStructure3 ref3 = ref2.mapStockStructure3.get(stock);
-					for (String universalAlert: universalAlertList) {
-						ref3.mapAlertTime.put(universalAlert,null);
+					for (String universalAlert : universalAlertList) {
+						ref3.mapAlertTime.put(universalAlert, null);
 					}
 				}
 				OutputStructure3 ref3 = ref2.mapStockStructure3.get(stock);
 				if (ref3.mapAlertTime.containsKey(inputStructure.alertName)) {
-					if(ref3.mapAlertTime.get(inputStructure.alertName)==null) {
+					if (ref3.mapAlertTime.get(inputStructure.alertName) == null) {
 						ref3.mapAlertTime.put(inputStructure.alertName, inputStructure.timePortion);
-					}
-					else {
+					} else {
 						String prevEntry = ref3.mapAlertTime.get(inputStructure.alertName);
 						String thisEntry = inputStructure.timePortion;
 						SimpleDateFormat sdf = new SimpleDateFormat("K:mm");
@@ -108,16 +133,15 @@ public class PivotProcessor {
 							ref3.mapAlertTime.put(inputStructure.alertName, thisEntry);
 						}
 					}
-				}
-				else {
+				} else {
 					ref3.mapAlertTime.put(inputStructure.alertName, inputStructure.timePortion);
 				}
 			}
 		}
 	}
-	
+
 	public static void enhanceData() throws Exception {
-		for (InputStructure inputStructure: inputStructureData) {
+		for (InputStructure inputStructure : inputStructureData) {
 			// split stocks
 			inputStructure.distinctStockArray = new HashSet<String>();
 			inputStructure.distinctStockArray.addAll(Arrays.asList(inputStructure.stocks.split(" ")));
@@ -169,7 +193,6 @@ public class PivotProcessor {
 					}
 					colCounter++;
 				}
-				System.out.println("");
 				inputStructureData.add(inputStructure);
 			}
 			rowCounter++;
@@ -201,6 +224,7 @@ class InputStructure {
 	public String stocks;
 	public String[] stockArray;
 	public HashSet<String> distinctStockArray;
+
 	@Override
 	public String toString() {
 		return "InputStructure [alertName=" + alertName + ", triggeredAt=" + triggeredAt + ", triggerAtCalendarObj="
@@ -212,29 +236,37 @@ class InputStructure {
 
 class OutputStructure1 {
 	public HashMap<String, OutputStructure2> mapDateStructure2;
+
 	public OutputStructure1() {
 		this.mapDateStructure2 = new HashMap<String, OutputStructure2>();
 	}
+
 	@Override
 	public String toString() {
 		return "OutputStructure1 [mapDateStructure2=" + mapDateStructure2 + "]";
 	}
 }
+
 class OutputStructure2 {
 	public TreeMap<String, OutputStructure3> mapStockStructure3;
+
 	public OutputStructure2() {
 		this.mapStockStructure3 = new TreeMap<String, OutputStructure3>();
 	}
+
 	@Override
 	public String toString() {
 		return "OutputStructure2 [mapStockStructure3=" + mapStockStructure3 + "]";
 	}
 }
+
 class OutputStructure3 {
 	public TreeMap<String, String> mapAlertTime;
+
 	public OutputStructure3() {
 		this.mapAlertTime = new TreeMap<String, String>();
 	}
+
 	@Override
 	public String toString() {
 		return "OutputStructure3 [mapAlertTime=" + mapAlertTime + "]";
