@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -28,7 +27,8 @@ public class PivotProcessor {
 	private static String outputSheetName = "";
 	private static ArrayList<InputStructure> inputStructureData = new ArrayList<InputStructure>();
 	private static OutputStructure1 outputStructureData = new OutputStructure1();
-	private static TreeSet<String> universalAlertList = new TreeSet<String>();
+	private static int universalAlertCount = 0;
+	private static ArrayList<String> universalAlertList = new ArrayList<String>();
 
 	public static void main(String s[]) {
 		try {
@@ -156,8 +156,6 @@ public class PivotProcessor {
 			inputStructure.timePortion = timePortionFormat.format(inputStructure.triggerAtDateObj);
 			System.out.println(inputStructure.datePortion);
 			System.out.println(inputStructure.timePortion);
-			// universal alert list
-			universalAlertList.add(inputStructure.alertName);
 		}
 	}
 
@@ -212,6 +210,10 @@ public class PivotProcessor {
 		dateTimeFormat = prop.getProperty("DATE_TIME_FORMAT");
 		outputFilePath = prop.getProperty("OUTPUT_FILE");
 		outputSheetName = prop.getProperty("OUTPUT_SHEET");
+		universalAlertCount = Integer.parseInt(prop.getProperty("ALERT_COUNT"));
+		for (int i=1; i<= universalAlertCount; i++) {
+			universalAlertList.add(prop.getProperty("ALERT_"+i));
+		}
 	}
 }
 
