@@ -20,11 +20,16 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 public class PivotProcessor {
+	private static String multiInput = "NO";
+	private static String inputDirectoryPath = "";
 	private static String inputFilePath = "";
 	private static String inputSheetName = "";
-	private static String dateTimeFormat = "";
+	private static String triggerTimespampFormat = "";
 	private static String outputFilePath = "";
 	private static String outputSheetName = "";
+	private static int inputColIndexForAlertName = -1;
+	private static int inputColIndexForTriggerTimestamp = -1;
+	private static int inputColIndexForStocks = -1;
 	private static ArrayList<InputStructure> inputStructureData = new ArrayList<InputStructure>();
 	private static OutputStructure1 outputStructureData = new OutputStructure1();
 	private static int universalAlertCount = 0;
@@ -35,8 +40,8 @@ public class PivotProcessor {
 			readProperties();
 			System.out.println("Reading Properties");
 			
-			readFile();
-			System.out.println("Reading File");
+			readData();
+			System.out.println("Reading File(s)");
 			
 			enhanceData();
 			System.out.println("Enhancing Data");
@@ -147,7 +152,7 @@ public class PivotProcessor {
 			// parse date time
 			System.out.println(inputStructure.triggeredAt);
 			inputStructure.triggerAtCalendarObj = Calendar.getInstance();
-			SimpleDateFormat sdf = new SimpleDateFormat(dateTimeFormat);
+			SimpleDateFormat sdf = new SimpleDateFormat(triggerTimespampFormat);
 			inputStructure.triggerAtCalendarObj.setTime(sdf.parse(inputStructure.triggeredAt));
 			inputStructure.triggerAtDateObj = inputStructure.triggerAtCalendarObj.getTime();
 			SimpleDateFormat datePortionFormat = new SimpleDateFormat("dd-MM-yyyy");
@@ -158,9 +163,23 @@ public class PivotProcessor {
 			System.out.println(inputStructure.timePortion);
 		}
 	}
+	
+	public static void readData() throws Exception {
+		if (multiInput.equalsIgnoreCase("YES")) {
+			File folder = new File(inputDirectoryPath);
+			for (final File fileEntry : folder.listFiles()) {
+		        if (! fileEntry.isDirectory()) {
+		            readFile(fileEntry.getAbsolutePath());
+		        }
+		    }
+		}
+		else if (multiInput.equalsIgnoreCase("NO"))  {
+			readFile(inputFilePath);
+		}
+	}
 
-	public static void readFile() throws Exception {
-		FileInputStream fis = new FileInputStream(new File(inputFilePath)); // obtaining input bytes from a file
+	public static void readFile(String fileName) throws Exception {
+		FileInputStream fis = new FileInputStream(new File(fileName)); // obtaining input bytes from a file
 		XSSFWorkbook wb = new XSSFWorkbook(fis);
 		XSSFSheet sheet = wb.getSheet(inputSheetName); // creating a Sheet object to retrieve object
 		int rowCounter = 0;
@@ -175,19 +194,17 @@ public class PivotProcessor {
 					Cell cell = cellIterator.next();
 					switch (cell.getCellTypeEnum()) {
 					case STRING: // field that represents string cell type
-						// System.out.print(cell.getStringCellValue() + "\t\t\t");
-						if (colCounter == 0) {
+						if (colCounter == inputColIndexForAlertName) {
 							inputStructure.alertName = cell.getStringCellValue().trim().toUpperCase();
 						}
-						if (colCounter == 1) {
+						if (colCounter == inputColIndexForTriggerTimestamp) {
 							inputStructure.triggeredAt = cell.getStringCellValue().trim();
 						}
-						if (colCounter == 3) {
+						if (colCounter == inputColIndexForStocks) {
 							inputStructure.stocks = cell.getStringCellValue().trim().toUpperCase();
 						}
 						break;
 					case NUMERIC: // field that represents number cell type
-						// System.out.print(cell.getNumericCellValue() + "\t\t\t");
 						break;
 					default:
 					}
@@ -205,11 +222,16 @@ public class PivotProcessor {
 		Properties prop = new Properties();
 		FileInputStream ip = new FileInputStream("config.properties");
 		prop.load(ip);
+		multiInput = prop.getProperty("MULTI_INPUT");
+		inputDirectoryPath = prop.getProperty("INPUT_DIRECTORY");
 		inputFilePath = prop.getProperty("INPUT_FILE");
 		inputSheetName = prop.getProperty("INPUT_SHEET");
-		dateTimeFormat = prop.getProperty("DATE_TIME_FORMAT");
+		triggerTimespampFormat = prop.getProperty("TRIGGER_TIMESTAMP_FORMAT");
 		outputFilePath = prop.getProperty("OUTPUT_FILE");
 		outputSheetName = prop.getProperty("OUTPUT_SHEET");
+		inputColIndexForAlertName = Integer.parseInt(prop.getProperty("INPUT_COLUMN_INDEX_FOR_ALERT_NAME"));
+		inputColIndexForTriggerTimestamp = Integer.parseInt(prop.getProperty("INPUT_COLUMN_INDEX_FOR_TRIGGER_TIMESTAMP"));
+		inputColIndexForStocks = Integer.parseInt(prop.getProperty("INPUT_COLUMN_INDEX_FOR_STOCKS"));
 		universalAlertCount = Integer.parseInt(prop.getProperty("ALERT_COUNT"));
 		for (int i=1; i<= universalAlertCount; i++) {
 			universalAlertList.add(prop.getProperty("ALERT_"+i));
